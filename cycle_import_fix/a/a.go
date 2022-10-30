@@ -1,7 +1,7 @@
 package a
 
 import (
-	"cycle_import/b"
+	"cycle_import/sl"
 	"fmt"
 )
 
@@ -20,7 +20,8 @@ func CreateA() *A {
 	a := A{`I am A`}
 	return &a
 }
-func InvokeSomethingFromB() {
-	o := b.CreateB()
+func InvokeSomethingFromB(sl sl.ServiceLocator) {
+	var o WithB
+	sl.Get(&o)
 	o.DoSomethingWithB()
 }
