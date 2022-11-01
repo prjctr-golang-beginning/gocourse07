@@ -1,11 +1,15 @@
 package main
 
 import (
+	"cycle_import/a"
 	"cycle_import/b"
+	"cycle_import/sl"
 )
-import "cycle_import/a"
 
 func main() {
-	b.InvokeSomethingFromA()
-	a.InvokeSomethingFromB()
+	sl := &sl.ServiceLocator{}
+	sl.Register(a.CreateA())
+	sl.Register(b.CreateB())
+	b.InvokeSomethingFromA(sl)
+	a.InvokeSomethingFromB(sl)
 }

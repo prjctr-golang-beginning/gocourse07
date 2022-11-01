@@ -1,13 +1,8 @@
 package a
 
 import (
-	"cycle_import/b"
 	"fmt"
 )
-
-type WithB interface {
-	DoSomethingWithB()
-}
 
 type A struct {
 	name string
@@ -20,7 +15,16 @@ func CreateA() *A {
 	a := A{`I am A`}
 	return &a
 }
-func InvokeSomethingFromB() {
-	o := b.CreateB()
-	o.DoSomethingWithB()
+func InvokeSomethingFromB(sl Getter) {
+	var b Ber
+	sl.Get(&b)
+	b.DoSomethingWithB()
+}
+
+type Ber interface {
+	DoSomethingWithB()
+}
+
+type Getter interface {
+	Get(some any) bool
 }
