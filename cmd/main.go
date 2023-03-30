@@ -1,7 +1,7 @@
 package main
 
 import (
-	"auditlog/auditor"
+	"concurrency/auditor"
 	"context"
 	"time"
 )

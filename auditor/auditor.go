@@ -1,5 +1,6 @@
 package auditor
 
+// TODO: add panic/recover with example
 import (
 	"context"
 	"fmt"
@@ -41,7 +42,6 @@ func New(r Repository) *Auditor {
 
 type Auditor struct {
 	repository Repository
-	mu         sync.RWMutex
 	_entities  []Valuable
 	ticker     *time.Ticker
 	flush      chan int
@@ -50,9 +50,6 @@ type Auditor struct {
 }
 
 func (a *Auditor) isStopped() bool {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	return a.stopped
 }
 
@@ -84,9 +81,6 @@ func (a *Auditor) autoFlush() {
 }
 
 func (a *Auditor) Flush(fType int) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
 	entitiesLen := len(a._entities)
 	if entitiesLen == 0 {
 		return
@@ -110,9 +104,7 @@ func (a *Auditor) lastFlush() {
 func (a *Auditor) Stop(wg *sync.WaitGroup) {
 	close(a.stop)
 
-	a.mu.Lock()
 	a.stopped = true
-	a.mu.Unlock()
 
 	a.lastFlush()
 	wg.Done()
@@ -130,9 +122,6 @@ func (a *Auditor) Update(subj any) {
 		//log.Errorw(`Auditor is trying updates after it had been stopped`, `entity`, ent)
 		return
 	}
-
-	a.mu.Lock()
-	defer a.mu.Unlock()
 
 	a._entities = append(a._entities, ent)
 	a.triggerFlushMax()
