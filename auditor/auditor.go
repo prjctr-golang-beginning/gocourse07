@@ -1,6 +1,5 @@
 package auditor
 
-// TODO: add panic/recover with example
 import (
 	"context"
 	"fmt"
@@ -14,7 +13,6 @@ type Valuable interface {
 }
 
 const (
-	observerId  = `audit_log`
 	flushPeriod = 2 * time.Second
 	flushMax    = 100
 
@@ -88,7 +86,7 @@ func (a *Auditor) Flush(fType int) {
 
 	affected, err := a.repository.CreateMany(context.Background(), a._entities[0:entitiesLen])
 	if err != nil {
-		fmt.Errorf(`auditor didn't save events. Error: %s. Type: %s`, err, flushType(fType))
+		fmt.Printf(`auditor didn't save events. Error: %s. Type: %s`, err, flushType(fType))
 	} else {
 		log.Printf(`Auditor flush events. Num: %d. Type: %s.`, affected, flushType(fType))
 	}
@@ -102,6 +100,12 @@ func (a *Auditor) lastFlush() {
 }
 
 func (a *Auditor) Stop(wg *sync.WaitGroup) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in Stop function", r)
+		}
+	}()
+
 	close(a.stop)
 
 	a.stopped = true
@@ -113,9 +117,15 @@ func (a *Auditor) Stop(wg *sync.WaitGroup) {
 }
 
 func (a *Auditor) Update(subj any) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in Update function", r)
+		}
+	}()
+
 	ent, ok := subj.(Valuable)
 	if !ok {
-		fmt.Errorf(`subject for Auditor is not Valuable type: Actual type: %s`, fmt.Sprintf("%T", subj))
+		fmt.Printf(`subject for Auditor is not Valuable type: Actual type: %s`, fmt.Sprintf("%T", subj))
 	}
 
 	if a.isStopped() {

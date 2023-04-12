@@ -15,7 +15,7 @@ func (v Value) Value() string {
 	return string(v)
 }
 
-func (r *myRepository) CreateMany(ctx context.Context, enities []auditor.Valuable) (int, error) {
+func (r *myRepository) CreateMany(_ context.Context, _ []auditor.Valuable) (int, error) {
 	return 0, nil
 }
 
@@ -33,4 +33,8 @@ func main() {
 	a.Update(val2)
 
 	time.Sleep(time.Second * 5)
+
+	// exercises
+	// 1. Створити дві горутини і обʼєднати їх каналами (string). Деяка строка мусить пройти дві горутини,
+	// де кожна її допише, і ми отримаємо її на виході
 }
