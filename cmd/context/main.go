@@ -21,7 +21,7 @@ func main() {
 	id := 1
 	go func() {
 		for { //горутина зависає до кінця виконання програми
-			pChan <- pkg.Patient{strconv.Itoa(id), "John Doe", 30, "A+"}
+			pChan <- pkg.Patient{strconv.Itoa(id), "John Doe", 30, "A+", ``}
 			time.Sleep(1 * time.Second)
 			id++
 		}

@@ -2,9 +2,9 @@ package pkg
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -12,13 +12,22 @@ import (
 type Clinic struct {
 	patients map[string]Patient
 	mu       sync.RWMutex
+
+	dataChan chan string
+	done     atomic.Bool
 }
 
 // NewClinic створює нову клініку з порожньою мапою пацієнтів
 func NewClinic() *Clinic {
 	return &Clinic{
 		patients: make(map[string]Patient),
+		dataChan: make(chan string),
 	}
+}
+
+// AddPatient додає нового пацієнта у мапу
+func (c *Clinic) Chan() <-chan string {
+	return c.dataChan
 }
 
 // AddPatient додає нового пацієнта у мапу
@@ -46,23 +55,6 @@ func (c *Clinic) AddPatientWhileCtx(ctx context.Context, p <-chan Patient) {
 	}
 }
 
-// GetPatient повертає пацієнта за ID
-func (c *Clinic) GetPatient(id string) (Patient, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	p, exists := c.patients[id]
-	return p, exists
-}
-
-// UpdatePatient оновлює дані пацієнта
-func (c *Clinic) UpdatePatient(id string, newPatient Patient) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if _, exists := c.patients[id]; exists {
-		c.patients[id] = newPatient
-	}
-}
-
 // DeletePatient видаляє пацієнта за ID
 func (c *Clinic) DeletePatient(id string) {
 	c.mu.Lock()
@@ -70,38 +62,46 @@ func (c *Clinic) DeletePatient(id string) {
 	delete(c.patients, id)
 }
 
-// FindPatientsByBloodType знаходить пацієнтів за групою крові
-func (c *Clinic) FindPatientsByBloodType(bloodType string) []Patient {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	var found []Patient
-	for _, p := range c.patients {
-		if p.BloodType == bloodType {
-			found = append(found, p)
-		}
-	}
-	return found
-}
-
-// SerializePatients серіалізує мапу пацієнтів в JSON
-func (c *Clinic) SerializePatients() (string, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	data, err := json.Marshal(c.patients)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
 // DeserializePatients десеріалізує JSON в мапу пацієнтів
-func (c *Clinic) DeserializePatients(data string) error {
+func (c *Clinic) Stop(done chan<- struct{}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	var patients map[string]Patient
-	if err := json.Unmarshal([]byte(data), &patients); err != nil {
-		return err
+
+	for id := range c.patients {
+		delete(c.patients, id)
+		time.Sleep(time.Second / 10)
 	}
-	c.patients = patients
-	return nil
+
+	c.done.Store(true)
+	close(c.dataChan)
+
+	done <- struct{}{}
+}
+
+func (c *Clinic) ProcessData(patientId int, p Patient, gg <-chan struct{}, wayChan chan<- chan string) {
+	defer func() { <-gg }()
+
+	if c.done.Load() {
+		fmt.Println(`Clinic processing done`)
+		return
+	}
+
+	var controlChan chan string
+	if patientId%10 == 0 {
+		controlChan = make(chan string)
+		wayChan <- controlChan
+	}
+
+	var patientData string
+	select {
+	case way := <-controlChan:
+		patientData = fmt.Sprintf("Patient %d processed in Special way: %s", patientId, way)
+	case <-time.After(time.Second):
+		patientData = fmt.Sprintf("Patient %d processed", patientId)
+	}
+
+	c.dataChan <- patientData
+	p.Data = patientData
+
+	c.AddPatient(p)
 }
