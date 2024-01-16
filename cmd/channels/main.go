@@ -42,7 +42,7 @@ func main() {
 
 	time.Sleep(5 * time.Second)
 	done := make(chan struct{}, 1)
-	clinic.Stop(done)
+	go clinic.Stop(done)
 	<-done
 
 	fmt.Println("All patients processed")
