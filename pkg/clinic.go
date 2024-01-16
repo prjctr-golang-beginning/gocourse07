@@ -82,7 +82,7 @@ func (c *Clinic) ProcessData(patientId int, p Patient, gg <-chan struct{}, wayCh
 	defer func() { <-gg }()
 
 	if c.done.Load() {
-		fmt.Println(`Clinic processing done`)
+		fmt.Printf("Patient %d won't be processed\n", patientId)
 		return
 	}
 

@@ -32,18 +32,27 @@ func main() {
 	}()
 
 	// Старт горутин для обробки даних пацієнтів
+	closeClinic := make(chan struct{})
 	gGuard := make(chan struct{}, maxGoroutines)
 	go func() {
 		for i, patient := range patients {
-			gGuard <- struct{}{} // would block if gGuard channel is already filled
-			go clinic.ProcessData(i, patient, gGuard, wayChan)
+			select {
+			case <-closeClinic:
+				fmt.Println("Clinic closed")
+				return
+			default:
+				gGuard <- struct{}{} // would block if gGuard channel is already filled
+				go clinic.ProcessData(i, patient, gGuard, wayChan)
+			}
+
 		}
 	}()
 
 	time.Sleep(5 * time.Second)
+	close(closeClinic)
 	done := make(chan struct{}, 1)
 	go clinic.Stop(done)
 	<-done
 
-	fmt.Println("All patients processed")
+	fmt.Println("All patients processed for today")
 }
